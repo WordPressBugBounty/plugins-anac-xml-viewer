@@ -4,7 +4,7 @@ Plugin Name: ANAC XML Viewer
 Plugin URI: https://wordpress.org/plugins/anac-xml-viewer/
 Description: Visualizzatore XML per file generati da applicativi esterni
 Author: Marco Milesi
-Version: 1.8.1
+Version: 1.8.3
 Author URI: https://marcomilesi.com
 */
 
@@ -139,9 +139,18 @@ class ANAC_XML_Viewer {
         $time_start = microtime(true);
 
         if ( substr( $content, 0, 4 ) === "http" ) {
-            $gare_xml = new SimpleXMLElement( $content, LIBXML_NOCDATA, true );
+            $gare_xml = $this->fetch_and_load_xml( $content );
+            if ( $gare_xml === null ) {
+                echo '<div class="notice notice-error"><p>Impossibile caricare XML. Assicurarsi che l\'URL esista e che il contenuto sia XML valido.</p></div>';
+                return;
+            }
         } else {
-            $gare_xml = new SimpleXMLElement( stripslashes($content) );
+            try {
+                $gare_xml = new SimpleXMLElement( stripslashes($content) );
+            } catch ( Exception $e ) {
+                echo '<div class="notice notice-error"><p>Il contenuto inserito non è XML valido.</p></div>';
+                return;
+            }
         }
 
         echo '<script type="text/javascript" src="' . plugin_dir_url(__FILE__) . 'includes/excellentexport.min.js"></script>';
@@ -259,6 +268,38 @@ class ANAC_XML_Viewer {
         })(document);
         </script>
         <?php
+    }
+
+    private function fetch_and_load_xml( $url ) {
+        if ( ! function_exists('wp_http_validate_url') || ! wp_http_validate_url( $url ) ) return null;
+
+        $args = [
+            'timeout' => 5,
+            'redirection' => 2,
+            'headers' => [ 'Accept' => 'application/xml, text/xml; q=0.9, */*; q=0.1' ],
+        ];
+        $response = wp_safe_remote_get( $url, $args );
+        if ( is_wp_error( $response ) ) return null;
+
+        $code = wp_remote_retrieve_response_code( $response );
+        if ( $code < 200 || $code >= 300 ) return null;
+
+        $body = wp_remote_retrieve_body( $response );
+        if ( ! $body ) return null;
+
+        $ctype = wp_remote_retrieve_header( $response, 'content-type' );
+        if ( $ctype && strpos( strtolower($ctype), 'xml' ) === false ) {
+            // Allow if body looks like XML even when header is wrong
+            if ( strpos( ltrim($body), '<') !== 0 ) return null;
+        }
+
+        libxml_use_internal_errors(true);
+        try {
+            $xml = new SimpleXMLElement( $body );
+            return $xml;
+        } catch ( Exception $e ) {
+            return null;
+        }
     }
 
     public function template_redirect() {
