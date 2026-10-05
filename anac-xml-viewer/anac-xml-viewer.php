@@ -4,7 +4,7 @@ Plugin Name: ANAC XML Viewer
 Plugin URI: https://wordpress.org/plugins/anac-xml-viewer/
 Description: Visualizzatore XML per file generati da applicativi esterni
 Author: Marco Milesi
-Version: 1.8.3
+Version: 1.8.4
 Author URI: https://marcomilesi.com
 */
 
@@ -217,8 +217,6 @@ class ANAC_XML_Viewer {
                   </tr>
                   <tr>
                     <td colspan="2">
-                        <a href="https://wpgov.it" target="_blank" title="WordPress per la Pubblica Amministrazione">
-            <img style="float: left;margin: 4px 5px;" src="' . plugins_url('wpgov.png', __FILE__) . '" ></a>
                         Tabella generata in <b>' . number_format( microtime(true) - $time_start, 3) . ' secondi</b>
                     </td>
                     <td colspan="3" style="text-align:right;">';
